@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Calendar as CalendarIcon, Clock, User, Phone, ArrowLeft, Loader2 } from 'lucide-react';
+import { CheckCircle, Calendar as CalendarIcon, Clock, User, Phone, ArrowLeft, Loader2, Lock, Mail } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useServices } from '../hooks/useServices';
 import { useAvailableSlots } from '../hooks/useAvailableSlots';
 import { useAppointment } from '../hooks/useAppointment';
+import { login, register } from '../api/auth';
 
 const AgendamentoPage = () => {
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('@naildesigner:user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [isLoginMode, setIsLoginMode] = useState(true);
+  const [authData, setAuthData] = useState({ email: '', password: '', name: '', phone: '' });
+  const [authLoading, setAuthLoading] = useState(false);
+
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [clientData, setClientData] = useState({ name: '', phone: '', notes: '' });
 
   const { services, isLoading: loadingServices } = useServices();
   const { slots, isLoading: loadingSlots } = useAvailableSlots(selectedDate, selectedService?.id);
@@ -25,35 +34,73 @@ const AgendamentoPage = () => {
     return `${day}/${month}/${year}`;
   };
 
-  const handlePhoneChange = (e) => {
+  const handleAuthPhoneChange = (e) => {
     let value = e.target.value.replace(/\D/g, '');
     if (value.length > 11) value = value.slice(0, 11);
     
     let formatted = value;
-    if (value.length > 2) {
-      formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
-    }
-    if (value.length > 7) {
-      formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
-    }
+    if (value.length > 2) formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+    if (value.length > 7) formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
     
-    setClientData({ ...clientData, phone: formatted });
+    setAuthData({ ...authData, phone: formatted });
   };
 
-  const handleSubmit = async (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
+    setAuthLoading(true);
+    try {
+      if (isLoginMode) {
+        const resp = await login({ email: authData.email, password: authData.password });
+        setUser(resp.user);
+        localStorage.setItem('@naildesigner:user', JSON.stringify(resp.user));
+        localStorage.setItem('@naildesigner:token', resp.token);
+        toast.success('Bem-vinda de volta!');
+      } else {
+        const resp = await register({ 
+          name: authData.name, 
+          email: authData.email, 
+          password: authData.password, 
+          phone: authData.phone 
+        });
+        setUser(resp.user);
+        localStorage.setItem('@naildesigner:user', JSON.stringify(resp.user));
+        localStorage.setItem('@naildesigner:token', resp.token);
+        toast.success('Cadastro realizado com sucesso!');
+      }
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('@naildesigner:user');
+    localStorage.removeItem('@naildesigner:token');
+    setStep(1);
+    setIsLoginMode(true);
+    setSelectedService(null);
+    setSelectedDate('');
+    setSelectedSlot(null);
+    setAuthData({ name: '', email: '', password: '', phone: '' });
+  };
+
+  const handleSubmitAppointment = async (e) => {
+    e?.preventDefault?.();
     const payload = {
       serviceId: selectedService.id,
+      clientId: user.id,
+      clientName: user.name,
+      clientPhone: user.phone,
       date: selectedDate,
       time: selectedSlot,
-      clientName: clientData.name,
-      clientPhone: clientData.phone,
-      notes: clientData.notes,
+      notes: '',
     };
     
     const isSuccess = await submitAppointment(payload);
     if (isSuccess) {
-      setStep(4); // Success step
+      setStep(4);
     }
   };
 
@@ -68,225 +115,320 @@ const AgendamentoPage = () => {
     >
       <div className="container agendamento-container">
         <div className="form-wrapper glass">
-          <div className="progress-container">
-            {[1, 2, 3].map((i) => (
-              <React.Fragment key={i}>
-                <div className={`step-indicator ${step >= i ? 'active' : ''} ${step > i ? 'completed' : ''}`}>
-                  {step > i ? <CheckCircle size={16} /> : i}
-                </div>
-                {i < 3 && <div className={`step-line ${step > i ? 'active' : ''}`} />}
-              </React.Fragment>
-            ))}
-          </div>
-
-          <AnimatePresence mode="wait">
-            {/* STEP 1: SELECT SERVICE */}
-            {step === 1 && (
+          {!user ? (
+            <AnimatePresence mode="wait">
               <motion.div
-                key="step1"
-                initial={{ x: 50, opacity: 0 }}
+                key={isLoginMode ? 'login' : 'register'}
+                initial={{ x: 30, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -50, opacity: 0 }}
-                className="step-content"
+                exit={{ x: -30, opacity: 0 }}
+                className="auth-content"
               >
-                <h2 className="section-title">Escolha o Serviço</h2>
-                <p className="subtitle">Selecione o serviço desejado para o seu agendamento.</p>
-
-                {loadingServices ? (
-                  <div className="loading-state"><Loader2 className="spinner" size={40} /></div>
-                ) : (
-                  <div className="services-grid">
-                    {services.map((svc) => (
-                      <div
-                        key={svc.id}
-                        className={`service-card ${selectedService?.id === svc.id ? 'selected' : ''}`}
-                        onClick={() => setSelectedService(svc)}
-                      >
-                        <div className="card-header">
-                          <h3>{svc.name}</h3>
-                          <span className="price">R$ {svc.price}</span>
-                        </div>
-                        <p>{svc.description}</p>
-                        <div className="duration">
-                          <Clock size={16} /> {svc.duration_minutes} min
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="actions">
-                  <button
-                    className="btn btn-primary"
-                    disabled={!selectedService}
-                    onClick={handleNext}
-                  >
-                    Continuar
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {/* STEP 2: SELECT DATE & TIME */}
-            {step === 2 && (
-              <motion.div
-                key="step2"
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -50, opacity: 0 }}
-                className="step-content"
-              >
-                <div className="header-with-back">
-                  <button className="btn-icon" onClick={handleBack}><ArrowLeft size={24} /></button>
-                  <h2 className="section-title">Data e Horário</h2>
-                </div>
-                <div className="service-info">
-                  <p className="subtitle">Serviço: <strong>{selectedService.name}</strong></p>
-                  <p className="subtitle">Duração: <strong>{selectedService.duration_minutes} min</strong></p>
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                  <h2 className="section-title">{isLoginMode ? 'Acesse sua conta' : 'Crie sua conta'}</h2>
+                  <p className="subtitle">
+                    {isLoginMode ? 'Para agendar, faça login com seus dados.' : 'Faça seu cadastro para facilitar futuros agendamentos.'}
+                  </p>
                 </div>
 
-                <div className="date-picker-container">
-                  <label className="input-label">
-                    <CalendarIcon size={18} />
-                    Selecione a data
-                  </label>
-                  <input
-                    type="date"
-                    min={today}
-                    className="date-input"
-                    value={selectedDate}
-                    onChange={(e) => {
-                      setSelectedDate(e.target.value);
-                      setSelectedSlot(null);
-                    }}
-                  />
-                </div>
+                <form className="client-form" onSubmit={handleAuth}>
+                  {!isLoginMode && (
+                    <div className="form-group">
+                      <label className="input-label"><User size={18} /> Nome Completo</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ex: Maria Silva"
+                        value={authData.name}
+                        onChange={(e) => setAuthData({ ...authData, name: e.target.value })}
+                        className="text-input"
+                      />
+                    </div>
+                  )}
 
-                {selectedDate && (
-                  <div className="slots-container">
-                    <label className="input-label">Horários Disponíveis</label>
-                    {loadingSlots ? (
-                      <div className="loading-state"><Loader2 className="spinner" size={30} /></div>
-                    ) : slots.length > 0 ? (
-                      <div className="slots-grid">
-                        {slots.map((slot) => (
-                          <div
-                            key={slot}
-                            className={`slot-card ${selectedSlot === slot ? 'selected' : ''}`}
-                            onClick={() => setSelectedSlot(slot)}
-                          >
-                            {slot}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="no-slots">Nenhum horário disponível nesta data. Tente outro dia.</p>
-                    )}
-                  </div>
-                )}
-
-                <div className="actions">
-                  <button
-                    className="btn btn-primary"
-                    disabled={!selectedDate || !selectedSlot}
-                    onClick={handleNext}
-                  >
-                    Continuar
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {/* STEP 3: CLIENT DETAILS */}
-            {step === 3 && (
-              <motion.div
-                key="step3"
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -50, opacity: 0 }}
-                className="step-content"
-              >
-                <div className="header-with-back">
-                  <button className="btn-icon" onClick={handleBack}><ArrowLeft size={24} /></button>
-                  <h2 className="section-title">Seus Dados</h2>
-                </div>
-                
-                <div className="summary-box">
-                  <p><strong>Serviço:</strong> {selectedService.name} (R$ {selectedService.price})</p>
-                  <p><strong>Data/Hora:</strong> {formatDateBR(selectedDate)} às {selectedSlot}</p>
-                </div>
-
-                <form className="client-form" onSubmit={handleSubmit}>
                   <div className="form-group">
-                    <label className="input-label"><User size={18} /> Nome Completo</label>
+                    <label className="input-label"><Mail size={18} /> E-mail</label>
                     <input
-                      type="text"
+                      type="email"
                       required
-                      placeholder="Ex: Maria Silva"
-                      value={clientData.name}
-                      onChange={(e) => setClientData({ ...clientData, name: e.target.value })}
+                      placeholder="seu@email.com"
+                      value={authData.email}
+                      onChange={(e) => setAuthData({ ...authData, email: e.target.value })}
                       className="text-input"
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="input-label"><Phone size={18} /> WhatsApp</label>
+
+                  {!isLoginMode && (
+                    <div className="form-group">
+                      <label className="input-label"><Phone size={18} /> WhatsApp</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="(XX) 9XXXX-XXXX"
+                        value={authData.phone}
+                        onChange={handleAuthPhoneChange}
+                        className="text-input"
+                      />
+                    </div>
+                  )}
+
+                  <div className="form-group" style={{ marginBottom: '30px' }}>
+                    <label className="input-label"><Lock size={18} /> Senha</label>
                     <input
-                      type="tel"
+                      type="password"
                       required
-                      placeholder="(XX) 9XXXX-XXXX"
-                      value={clientData.phone}
-                      onChange={handlePhoneChange}
+                      placeholder="**********"
+                      value={authData.password}
+                      onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
                       className="text-input"
                     />
                   </div>
-                  <div className="actions">
+
+                  <div className="actions" style={{ flexDirection: 'column', gap: '15px' }}>
                     <button
                       type="submit"
                       className="btn btn-gold w-full flex-center"
-                      disabled={submitting || !clientData.name || !clientData.phone}
+                      disabled={authLoading}
                     >
-                      {submitting ? <Loader2 className="spinner" size={20} /> : 'Confirmar Agendamento'}
+                      {authLoading ? <Loader2 className="spinner" size={20} /> : (isLoginMode ? 'Entrar' : 'Cadastrar e Entrar')}
                     </button>
+
+                    <p style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--color-text-light)', marginTop: '10px' }}>
+                      {isLoginMode ? 'Ainda não tem conta?' : 'Já possui uma conta?'}
+                      {' '}
+                      <span 
+                        style={{ color: 'var(--color-terracotta)', fontWeight: 'bold', cursor: 'pointer' }}
+                        onClick={() => {
+                          setIsLoginMode(!isLoginMode);
+                          setAuthData({ ...authData, password: '' });
+                        }}
+                      >
+                        {isLoginMode ? 'Cadastre-se' : 'Faça login'}
+                      </span>
+                    </p>
                   </div>
                 </form>
               </motion.div>
-            )}
+            </AnimatePresence>
+          ) : (
+            <>
+              <div className="progress-container">
+                {[1, 2, 3].map((i) => (
+                  <React.Fragment key={i}>
+                    <div className={`step-indicator ${step >= i ? 'active' : ''} ${step > i ? 'completed' : ''}`}>
+                      {step > i ? <CheckCircle size={16} /> : i}
+                    </div>
+                    {i < 3 && <div className={`step-line ${step > i ? 'active' : ''}`} />}
+                  </React.Fragment>
+                ))}
+              </div>
 
-            {/* STEP 4: SUCCESS */}
-            {step === 4 && (
-              <motion.div
-                key="step4"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="step-content success-content"
-              >
-                <div className="success-icon">
-                  <CheckCircle size={80} color="var(--color-gold)" />
-                </div>
-                <h2 className="section-title">Agendamento Confirmado!</h2>
-                <p className="subtitle">
-                  Sua reserva foi concluída com sucesso. Você receberá uma confirmação no seu WhatsApp.
-                </p>
-                <div className="summary-box">
-                  <p><strong>Data:</strong> {formatDateBR(selectedDate)}</p>
-                  <p><strong>Hora:</strong> {selectedSlot}</p>
-                  <p><strong>Serviço:</strong> {selectedService?.name}</p>
-                </div>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => {
-                    setStep(1);
-                    setSelectedService(null);
-                    setSelectedDate('');
-                    setSelectedSlot(null);
-                    setClientData({ name: '', phone: '', notes: '' });
-                  }}
-                >
-                  Fazer Novo Agendamento
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              <AnimatePresence mode="wait">
+                {/* STEP 1: SELECT SERVICE */}
+                {step === 1 && (
+                  <motion.div
+                    key="step1"
+                    initial={{ x: 50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -50, opacity: 0 }}
+                    className="step-content"
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <h2 className="section-title">Escolha o Serviço</h2>
+                        <p className="subtitle">Selecione o serviço desejado para o seu agendamento.</p>
+                      </div>
+                      <div style={{ textAlign: 'right', fontSize: '0.85rem' }}>
+                        <p>Cliente: <strong>{user.name.split(' ')[0]}</strong></p>
+                        <button 
+                          onClick={handleLogout}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-terracotta)', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                          Sair da conta
+                        </button>
+                      </div>
+                    </div>
+
+                    {loadingServices ? (
+                      <div className="loading-state"><Loader2 className="spinner" size={40} /></div>
+                    ) : (
+                      <div className="services-grid">
+                        {services.map((svc) => (
+                          <div
+                            key={svc.id}
+                            className={`service-card ${selectedService?.id === svc.id ? 'selected' : ''}`}
+                            onClick={() => setSelectedService(svc)}
+                          >
+                            <div className="card-header">
+                              <h3>{svc.name}</h3>
+                              <span className="price">R$ {svc.price}</span>
+                            </div>
+                            <p>{svc.description}</p>
+                            <div className="duration">
+                              <Clock size={16} /> {svc.duration_minutes} min
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="actions">
+                      <button
+                        className="btn btn-primary"
+                        disabled={!selectedService}
+                        onClick={handleNext}
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* STEP 2: SELECT DATE & TIME */}
+                {step === 2 && (
+                  <motion.div
+                    key="step2"
+                    initial={{ x: 50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -50, opacity: 0 }}
+                    className="step-content"
+                  >
+                    <div className="header-with-back">
+                      <button className="btn-icon" onClick={handleBack}><ArrowLeft size={24} /></button>
+                      <h2 className="section-title">Data e Horário</h2>
+                    </div>
+                    <div className="service-info">
+                      <p className="subtitle">Serviço: <strong>{selectedService.name}</strong></p>
+                      <p className="subtitle">Duração: <strong>{selectedService.duration_minutes} min</strong></p>
+                    </div>
+
+                    <div className="date-picker-container">
+                      <label className="input-label">
+                        <CalendarIcon size={18} />
+                        Selecione a data
+                      </label>
+                      <input
+                        type="date"
+                        min={today}
+                        className="date-input"
+                        value={selectedDate}
+                        onChange={(e) => {
+                          setSelectedDate(e.target.value);
+                          setSelectedSlot(null);
+                        }}
+                      />
+                    </div>
+
+                    {selectedDate && (
+                      <div className="slots-container">
+                        <label className="input-label">Horários Disponíveis</label>
+                        {loadingSlots ? (
+                          <div className="loading-state"><Loader2 className="spinner" size={30} /></div>
+                        ) : slots.length > 0 ? (
+                          <div className="slots-grid">
+                            {slots.map((slot) => (
+                              <div
+                                key={slot}
+                                className={`slot-card ${selectedSlot === slot ? 'selected' : ''}`}
+                                onClick={() => setSelectedSlot(slot)}
+                              >
+                                {slot}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="no-slots">Nenhum horário disponível nesta data. Tente outro dia.</p>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="actions">
+                      <button
+                        className="btn btn-primary"
+                        disabled={!selectedDate || !selectedSlot}
+                        onClick={handleNext}
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* STEP 3: CONFIRM DETAILS */}
+                {step === 3 && (
+                  <motion.div
+                    key="step3"
+                    initial={{ x: 50, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -50, opacity: 0 }}
+                    className="step-content"
+                  >
+                    <div className="header-with-back">
+                      <button className="btn-icon" onClick={handleBack}><ArrowLeft size={24} /></button>
+                      <h2 className="section-title">Confirme seu Agendamento</h2>
+                    </div>
+                    
+                    <div className="summary-box">
+                      <p><strong>Serviço:</strong> {selectedService.name} (R$ {selectedService.price})</p>
+                      <p><strong>Duração:</strong> {selectedService.duration_minutes} min</p>
+                      <p><strong>Data/Hora:</strong> {formatDateBR(selectedDate)} às {selectedSlot}</p>
+                    </div>
+
+                    <div className="summary-box" style={{ background: 'var(--color-off-white)', border: '1px solid var(--color-sand)' }}>
+                      <h3 style={{ marginBottom: '15px', color: 'var(--color-terracotta)' }}>Pronto para confirmar, {user.name.split(' ')[0]}?</h3>
+                      <p><strong>Nome Completo:</strong> {user.name}</p>
+                      <p><strong>E-mail:</strong> {user.email}</p>
+                      <p><strong>WhatsApp:</strong> {user.phone}</p>
+                    </div>
+
+                    <div className="actions" style={{ marginTop: '30px' }}>
+                      <button
+                        onClick={handleSubmitAppointment}
+                        className="btn btn-gold w-full flex-center"
+                        disabled={submitting}
+                      >
+                        {submitting ? <Loader2 className="spinner" size={20} /> : 'Finalizar e Agendar'}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* STEP 4: SUCCESS */}
+                {step === 4 && (
+                  <motion.div
+                    key="step4"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="step-content success-content"
+                  >
+                    <div className="success-icon">
+                      <CheckCircle size={80} color="var(--color-gold)" />
+                    </div>
+                    <h2 className="section-title">Agendamento Confirmado!</h2>
+                    <p className="subtitle">
+                      Sua reserva foi concluída com sucesso. Seu lugar na agenda está garantido.
+                    </p>
+                    <div className="summary-box">
+                      <p><strong>Data:</strong> {formatDateBR(selectedDate)}</p>
+                      <p><strong>Hora:</strong> {selectedSlot}</p>
+                      <p><strong>Serviço:</strong> {selectedService?.name}</p>
+                    </div>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setStep(1);
+                        setSelectedService(null);
+                        setSelectedDate('');
+                        setSelectedSlot(null);
+                      }}
+                    >
+                      Fazer Novo Agendamento
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          )}
         </div>
       </div>
 
@@ -310,6 +452,7 @@ const AgendamentoPage = () => {
           border-radius: var(--border-radius);
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04);
           background: var(--color-white);
+          min-height: 400px;
         }
 
         .progress-container {
