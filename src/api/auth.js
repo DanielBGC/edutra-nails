@@ -13,3 +13,9 @@ export const register = async ({ name, email, password, phone }) => {
     body: JSON.stringify({ name, email, password, phone }),
   });
 };
+
+export const checkIsAdmin = async () => {
+  return apiClient('/auth/check-admin', {
+    method: 'GET',
+  });
+};

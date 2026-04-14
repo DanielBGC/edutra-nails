@@ -8,6 +8,11 @@ export const apiClient = async (endpoint, options = {}) => {
     ...options.headers,
   };
 
+  const token = localStorage.getItem('@naildesigner:token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const config = {
     ...options,
     headers,
@@ -15,6 +20,11 @@ export const apiClient = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config);
+
+    if (response.status === 204) {
+      return null;
+    }
+
     const data = await response.json();
 
     if (!response.ok) {

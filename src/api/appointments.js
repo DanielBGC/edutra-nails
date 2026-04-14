@@ -12,3 +12,9 @@ export const createAppointment = async (appointmentData) => {
     body: JSON.stringify(appointmentData),
   });
 };
+
+export const getAllAppointments = async () => {
+  return apiClient('/appointments', {
+    method: 'GET',
+  });
+};
