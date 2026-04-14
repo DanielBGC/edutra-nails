@@ -69,15 +69,13 @@ const Header = () => {
           </ul>
         </nav>
         <div className="header-cta">
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/agendamento"
             className="btn btn-gold"
             style={{ fontSize: '0.9rem' }}
           >
             Agendar Agora
-          </a>
+          </Link>
         </div>
       </div>
 

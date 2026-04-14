@@ -10,6 +10,8 @@ import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
 import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
+import AgendamentoPage from './pages/AgendamentoPage';
+import { Toaster } from 'react-hot-toast';
 import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 import { getWhatsappUrl } from './helpers/getWhatsappUrl';
 
@@ -35,6 +37,7 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
+      <Toaster position="top-center" reverseOrder={false} />
       <div className="app">
         <motion.div
           className="progress-bar"
@@ -59,6 +62,7 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/blog" element={<BlogListPage />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
+              <Route path="/agendamento" element={<AgendamentoPage />} />
             </Routes>
           </AnimatePresence>
         </main>

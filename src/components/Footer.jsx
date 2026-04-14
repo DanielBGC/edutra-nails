@@ -54,6 +54,7 @@ const Footer = () => {
           <p><Mail size={16} /> contato@edutranails.com</p>
 
           <p>Uberaba, MG - Brasil</p>
+          <p>Bairro Zeca Mendes</p>
         </div>
       </div>
       
