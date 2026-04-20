@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Calendar as CalendarIcon, Clock, User, Phone, ArrowLeft, Loader2, Lock, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useServices } from '../hooks/useServices';
 import { useAvailableSlots } from '../hooks/useAvailableSlots';
 import { useAppointment } from '../hooks/useAppointment';
-import { login, register } from '../api/auth';
 
 const AgendamentoPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('@naildesigner:user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  const [isLoginMode, setIsLoginMode] = useState(true);
-  const [authData, setAuthData] = useState({ email: '', password: '', name: '', phone: '' });
-  const [authLoading, setAuthLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login', { state: { from: location } });
+    }
+  }, [user, navigate, location]);
 
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState(null);
@@ -35,56 +40,13 @@ const AgendamentoPage = () => {
     return `${day}/${month}/${year}`;
   };
 
-  const handleAuthPhoneChange = (e) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 11) value = value.slice(0, 11);
-    
-    let formatted = value;
-    if (value.length > 2) formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
-    if (value.length > 7) formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
-    
-    setAuthData({ ...authData, phone: formatted });
-  };
 
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setAuthLoading(true);
-    try {
-      if (isLoginMode) {
-        const resp = await login({ email: authData.email, password: authData.password });
-        setUser(resp.user);
-        localStorage.setItem('@naildesigner:user', JSON.stringify(resp.user));
-        localStorage.setItem('@naildesigner:token', resp.token);
-        toast.success('Bem-vinda de volta!');
-      } else {
-        const resp = await register({ 
-          name: authData.name, 
-          email: authData.email, 
-          password: authData.password, 
-          phone: authData.phone 
-        });
-        setUser(resp.user);
-        localStorage.setItem('@naildesigner:user', JSON.stringify(resp.user));
-        localStorage.setItem('@naildesigner:token', resp.token);
-        toast.success('Cadastro realizado com sucesso!');
-      }
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('@naildesigner:user');
     localStorage.removeItem('@naildesigner:token');
-    setStep(1);
-    setIsLoginMode(true);
-    setSelectedService(null);
-    setSelectedDate('');
-    setSelectedSlot(null);
-    setAuthData({ name: '', email: '', password: '', phone: '' });
+    navigate('/login');
   };
 
   const handleSubmitAppointment = async (e) => {
@@ -107,6 +69,8 @@ const AgendamentoPage = () => {
 
   const today = new Date().toISOString().split('T')[0];
 
+    if (!user) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -116,102 +80,6 @@ const AgendamentoPage = () => {
     >
       <div className="container agendamento-container">
         <div className="form-wrapper glass">
-          {!user ? (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={isLoginMode ? 'login' : 'register'}
-                initial={{ x: 30, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: -30, opacity: 0 }}
-                className="auth-content"
-              >
-                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                  <h2 className="section-title">{isLoginMode ? 'Acesse sua conta' : 'Crie sua conta'}</h2>
-                  <p className="subtitle">
-                    {isLoginMode ? 'Para agendar, faça login com seus dados.' : 'Faça seu cadastro para facilitar futuros agendamentos.'}
-                  </p>
-                </div>
-
-                <form className="client-form" onSubmit={handleAuth}>
-                  {!isLoginMode && (
-                    <div className="form-group">
-                      <label className="input-label"><User size={18} /> Nome Completo</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ex: Maria Silva"
-                        value={authData.name}
-                        onChange={(e) => setAuthData({ ...authData, name: e.target.value })}
-                        className="text-input"
-                      />
-                    </div>
-                  )}
-
-                  <div className="form-group">
-                    <label className="input-label"><Mail size={18} /> E-mail</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="seu@email.com"
-                      value={authData.email}
-                      onChange={(e) => setAuthData({ ...authData, email: e.target.value })}
-                      className="text-input"
-                    />
-                  </div>
-
-                  {!isLoginMode && (
-                    <div className="form-group">
-                      <label className="input-label"><Phone size={18} /> WhatsApp</label>
-                      <input
-                        type="tel"
-                        required
-                        placeholder="(XX) 9XXXX-XXXX"
-                        value={authData.phone}
-                        onChange={handleAuthPhoneChange}
-                        className="text-input"
-                      />
-                    </div>
-                  )}
-
-                  <div className="form-group" style={{ marginBottom: '30px' }}>
-                    <label className="input-label"><Lock size={18} /> Senha</label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="**********"
-                      value={authData.password}
-                      onChange={(e) => setAuthData({ ...authData, password: e.target.value })}
-                      className="text-input"
-                    />
-                  </div>
-
-                  <div className="actions" style={{ flexDirection: 'column', gap: '15px' }}>
-                    <button
-                      type="submit"
-                      className="btn btn-gold w-full flex-center"
-                      disabled={authLoading}
-                    >
-                      {authLoading ? <Loader2 className="spinner" size={20} /> : (isLoginMode ? 'Entrar' : 'Cadastrar e Entrar')}
-                    </button>
-
-                    <p style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--color-text-light)', marginTop: '10px' }}>
-                      {isLoginMode ? 'Ainda não tem conta?' : 'Já possui uma conta?'}
-                      {' '}
-                      <span 
-                        style={{ color: 'var(--color-terracotta)', fontWeight: 'bold', cursor: 'pointer' }}
-                        onClick={() => {
-                          setIsLoginMode(!isLoginMode);
-                          setAuthData({ ...authData, password: '' });
-                        }}
-                      >
-                        {isLoginMode ? 'Cadastre-se' : 'Faça login'}
-                      </span>
-                    </p>
-                  </div>
-                </form>
-              </motion.div>
-            </AnimatePresence>
-          ) : (
             <>
               <div className="progress-container">
                 {[1, 2, 3].map((i) => (
@@ -442,7 +310,6 @@ const AgendamentoPage = () => {
                 )}
               </AnimatePresence>
             </>
-          )}
         </div>
       </div>
 

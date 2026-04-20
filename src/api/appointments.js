@@ -32,6 +32,12 @@ export const deleteBlock = async (blockId) => {
   });
 };
 
+export const getMyAppointments = async () => {
+  return apiClient('/appointments/me', {
+    method: 'GET',
+  });
+};
+
 export const getAllAppointments = async () => {
   return apiClient('/appointments', {
     method: 'GET',

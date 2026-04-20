@@ -8,6 +8,12 @@ const Header = () => {
   const navigate = useNavigate();
 
   const whatsappUrl = getWhatsappUrl();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('@naildesigner:user');
+    setUser(savedUser ? JSON.parse(savedUser) : null);
+  }, [pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -66,6 +72,13 @@ const Header = () => {
                 )}
               </li>
             ))}
+            {user && (
+              <li>
+                <Link to="/meus-agendamentos" style={{ color: 'var(--color-gold)', fontWeight: 'bold' }}>
+                  Minha Agenda
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
         <div className="header-cta">

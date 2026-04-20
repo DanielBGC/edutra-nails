@@ -12,6 +12,8 @@ import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
 import AgendamentoPage from './pages/AgendamentoPage';
 import AdminPage from './pages/AdminPage';
+import MyAppointmentsPage from './pages/MyAppointmentsPage';
+import LoginPage from './pages/LoginPage';
 import { Toaster } from 'react-hot-toast';
 import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
 import { getWhatsappUrl } from './helpers/getWhatsappUrl';
@@ -64,6 +66,8 @@ function App() {
               <Route path="/blog" element={<BlogListPage />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
               <Route path="/agendamento" element={<AgendamentoPage />} />
+              <Route path="/meus-agendamentos" element={<MyAppointmentsPage />} />
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Routes>
           </AnimatePresence>
