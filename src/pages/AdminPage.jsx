@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Lock, Mail, Users, Calendar, Settings, Edit2, Check, X, LogOut, Phone, Trash2, Plus } from 'lucide-react';
+import { Loader2, Lock, Mail, Users, Calendar, Settings, Edit2, Check, X, LogOut, Phone, Trash2, Plus, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { login, checkIsAdmin } from '../api/auth';
 import { getServices, updateService, createService, deleteService } from '../api/services';
@@ -413,41 +413,67 @@ const AdminPage = () => {
                     </div>
                   ) : (
                     <div className="appointments-list">
-                      {appointments.map(app => (
-                        <div key={app.id} className="appointment-card">
-                          <div className="app-main-info">
-                            <span className="app-date">
-                              {new Date(app.date).toLocaleDateString('pt-BR')} 
-                              {app.itemType === 'block' ? ` de ${app.time} às ${app.end_time}` : ` às ${app.time}`}
-                            </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <span className={`status-badge ${app.status?.toLowerCase() || 'pending'}`}>
-                                {app.status === 'confirmed' ? 'Confirmado' : app.status === 'blocked' ? 'Bloqueado' : app.status === 'cancelled' ? 'Cancelado' : 'Pendente'}
-                              </span>
-                              <button className="btn-edit btn-red" onClick={() => handleDeleteItem(app)} title="Excluir" style={{ width: '28px', height: '28px' }}>
-                                <Trash2 size={14} />
-                              </button>
+                      {Object.keys(appointments.reduce((groups, app) => {
+                        const date = app.date;
+                        if (!groups[date]) groups[date] = [];
+                        groups[date].push(app);
+                        return groups;
+                      }, {})).sort().map(date => {
+                        const dateApps = appointments.filter(a => a.date === date).sort((a,b) => a.time.localeCompare(b.time));
+                        
+                        return (
+                          <div key={date} className="date-group" style={{ marginBottom: '40px' }}>
+                            <div className="date-header" style={{ padding: '10px 0', borderBottom: '2px solid var(--color-sand)', marginBottom: '15px', color: 'var(--color-terracotta)', fontWeight: 'bold', fontSize: '1.1rem' }}>
+                              <Calendar size={18} style={{ marginRight: '8px' }} />
+                              {new Date(date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '15px' }}>
+                              {dateApps.map(app => (
+                                <div key={app.id} className="appointment-card">
+                                  <div className="app-main-info">
+                                    <span className="app-date" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <Clock size={14} />
+                                      {app.time} {app.itemType === 'block' ? ` às ${app.end_time}` : ''}
+                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <span className={`status-badge ${app.status?.toLowerCase() || 'pending'}`}>
+                                        {app.status === 'confirmed' ? 'Confirmado' : app.status === 'blocked' ? 'Bloqueado' : app.status === 'cancelled' ? 'Cancelado' : 'Pendente'}
+                                      </span>
+                                      <button className="btn-edit btn-red" onClick={() => handleDeleteItem(app)} title="Excluir" style={{ width: '28px', height: '28px' }}>
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  {app.itemType === 'block' ? (
+                                    <div className="app-client-info" style={{ marginTop: '10px' }}>
+                                      <p><strong><Lock size={14}/> {app.client_name}</strong></p>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="app-client-info">
+                                        <p><strong><Users size={14}/> Cliente:</strong> {app.client_name}</p>
+                                        <p><strong><Phone size={14}/> Telefone:</strong> {app.client_phone}</p>
+                                      </div>
+                                      <div className="app-service-info">
+                                        <p><strong>Serviço:</strong> {app.service?.name || 'Serviço não encontrado'}</p>
+                                        <p><strong>Preço:</strong> R$ {app.service?.price ? app.service.price.toFixed(2) : 'Serviço não encontrado'}</p>
+                                        <p><strong>Duração:</strong> {app.service?.duration_minutes || 'Serviço não encontrado'} minutos</p>
+                                      </div>
+                                      {app.notes && (
+                                        <div className="app-notes" style={{ marginTop: '12px', padding: '10px', background: '#f9f9f9', borderRadius: '8px', borderLeft: '4px solid var(--color-gold)' }}>
+                                          <p style={{ margin: 0, fontSize: '0.85rem', fontStyle: 'italic', color: 'var(--color-text-light)' }}>
+                                            <strong>Obs:</strong> {app.notes}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              ))}
                             </div>
                           </div>
-                          {app.itemType === 'block' ? (
-                            <div className="app-client-info" style={{ marginTop: '10px' }}>
-                              <p><strong><Lock size={14}/> {app.client_name}</strong></p>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="app-client-info">
-                                <p><strong><Users size={14}/> Cliente:</strong> {app.client_name}</p>
-                                <p><strong><Phone size={14}/> Telefone:</strong> {app.client_phone}</p>
-                              </div>
-                              <div className="app-service-info">
-                                <p><strong>Serviço:</strong> {app.service?.name || 'Serviço não encontrado'}</p>
-                                <p><strong>Preço:</strong> R$ {app.service?.price ? app.service.price.toFixed(2) : 'Serviço não encontrado'}</p>
-                                <p><strong>Duração:</strong> {app.service?.duration_minutes || 'Serviço não encontrado'} minutos</p>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </motion.div>

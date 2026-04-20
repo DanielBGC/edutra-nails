@@ -20,6 +20,7 @@ const AgendamentoPage = () => {
   const [selectedService, setSelectedService] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [appointmentNotes, setAppointmentNotes] = useState('');
 
   const { services, isLoading: loadingServices } = useServices();
   const { slots, isLoading: loadingSlots } = useAvailableSlots(selectedDate, selectedService?.id);
@@ -95,7 +96,7 @@ const AgendamentoPage = () => {
       clientPhone: user.phone,
       date: selectedDate,
       time: selectedSlot,
-      notes: '',
+      notes: appointmentNotes,
     };
     
     const isSuccess = await submitAppointment(payload);
@@ -381,6 +382,18 @@ const AgendamentoPage = () => {
                       <p><strong>WhatsApp:</strong> {user.phone}</p>
                     </div>
 
+                    <div className="form-group" style={{ marginTop: '20px' }}>
+                      <label className="input-label">Observações (Opcional)</label>
+                      <textarea
+                        className="text-input"
+                        placeholder="Ex: Gostaria de fazer uma nail art específica, minha unha está muito curta, etc..."
+                        value={appointmentNotes}
+                        onChange={(e) => setAppointmentNotes(e.target.value)}
+                        rows={3}
+                        style={{ resize: 'none' }}
+                      />
+                    </div>
+
                     <div className="actions" style={{ marginTop: '30px' }}>
                       <button
                         onClick={handleSubmitAppointment}
@@ -420,6 +433,7 @@ const AgendamentoPage = () => {
                         setSelectedService(null);
                         setSelectedDate('');
                         setSelectedSlot(null);
+                        setAppointmentNotes('');
                       }}
                     >
                       Fazer Novo Agendamento
