@@ -19,3 +19,9 @@ export const checkIsAdmin = async () => {
     method: 'GET',
   });
 };
+
+export const getUsers = async () => {
+  return apiClient('/users', {
+    method: 'GET',
+  });
+};

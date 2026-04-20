@@ -1,3 +1,5 @@
+@import './styles/appointment.css';
+
 :root {
   --color-sand: #f5f1ed;
   --color-off-white: #faf9f6;

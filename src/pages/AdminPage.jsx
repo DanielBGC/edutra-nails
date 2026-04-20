@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Lock, Mail, Users, Calendar, Settings, Edit2, Check, X, LogOut, Phone, Trash2, Plus, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { login, checkIsAdmin } from '../api/auth';
+import { login, checkIsAdmin, getUsers } from '../api/auth';
 import { getServices, updateService, createService, deleteService } from '../api/services';
 import { getAllAppointments, deleteAppointment, blockSlot, getAvailableSlots } from '../api/appointments';
+import AppointmentFlow from '../components/AppointmentFlow';
 
 const AdminPage = () => {
   const [user, setUser] = useState(() => {
@@ -34,6 +35,12 @@ const AdminPage = () => {
   const [isBlockingSlot, setIsBlockingSlot] = useState(false);
   const [blockForm, setBlockForm] = useState({ date: '', start_time: '09:00', end_time: '18:00', reason: '' });
   const [savingBlock, setSavingBlock] = useState(false);
+
+  const [isCreatingAppointment, setIsCreatingAppointment] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [selectedClientForAppointment, setSelectedClientForAppointment] = useState(null);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
 
 
 
@@ -127,6 +134,19 @@ const AdminPage = () => {
       setAppointments([]);
     } finally {
       setLoadingAppointments(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const data = await getUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Erro ao carregar usuários.');
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -341,6 +361,16 @@ const AdminPage = () => {
                   <div className="tab-header">
                     <h2>Todos os Agendamentos</h2>
                     <div style={{ display: 'flex', gap: '10px' }}>
+                      <button 
+                        className="btn btn-gold" 
+                        onClick={() => {
+                          setIsCreatingAppointment(true);
+                          fetchUsers();
+                        }} 
+                        style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                      >
+                        <Plus size={16} /> Agendar
+                      </button>
                       <button className="btn btn-primary" onClick={() => setIsBlockingSlot(true)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
                         <Lock size={16} /> Bloquear
                       </button>
@@ -349,6 +379,105 @@ const AdminPage = () => {
                       </button>
                     </div>
                   </div>
+
+                  {isCreatingAppointment && (
+                    <div className="service-admin-card editing" style={{ marginBottom: '30px' }}>
+                       <div className="edit-form">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                          <h3 style={{ margin: 0 }}>Criar Novo Agendamento</h3>
+                          <button onClick={() => {
+                            setIsCreatingAppointment(false);
+                            setSelectedClientForAppointment(null);
+                          }} className="btn-cancel" style={{ padding: '5px' }}>
+                            <X size={20} />
+                          </button>
+                        </div>
+
+                        {!selectedClientForAppointment ? (
+                          <div className="client-selection">
+                            <label className="input-label">1. Selecione a Cliente</label>
+                            <input 
+                              type="text" 
+                              className="edit-input" 
+                              placeholder="Buscar cliente por nome ou email..."
+                              value={userSearchTerm}
+                              onChange={(e) => setUserSearchTerm(e.target.value)}
+                              style={{ marginBottom: '15px' }}
+                            />
+                            
+                            {loadingUsers ? (
+                              <div className="loading-state" style={{ padding: '20px' }}><Loader2 className="spinner" size={30} /></div>
+                            ) : (
+                              <div className="users-list-scroll" style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--color-sand)', borderRadius: '10px' }}>
+                                {users
+                                  .filter(u => 
+                                    u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || 
+                                    u.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+                                  )
+                                  .map(u => (
+                                    <div 
+                                      key={u.id} 
+                                      className="user-select-item"
+                                      onClick={() => setSelectedClientForAppointment(u)}
+                                      style={{ padding: '12px 15px', borderBottom: '1px solid var(--color-sand)', cursor: 'pointer', transition: 'background 0.2s' }}
+                                    >
+                                      <div style={{ fontWeight: '600' }}>{u.name}</div>
+                                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-light)' }}>{u.email} • {u.phone}</div>
+                                    </div>
+                                  ))
+                                }
+                                {users.length > 0 && users.filter(u => 
+                                  u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || 
+                                  u.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+                                ).length === 0 && (
+                                  <div style={{ padding: '20px', textAlign: 'center', color: 'var(--color-text-light)' }}>Nenhum usuário encontrado.</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="appointment-flow-container">
+                             <div 
+                                style={{ 
+                                  marginBottom: '20px', 
+                                  padding: '10px 15px', 
+                                  background: 'var(--color-off-white)', 
+                                  borderRadius: '10px', 
+                                  display: 'flex', 
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center'
+                                }}
+                              >
+                                <div>
+                                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-light)' }}>Agendando para:</span>
+                                  <div style={{ fontWeight: '700' }}>{selectedClientForAppointment.name}</div>
+                                </div>
+                                <button 
+                                  onClick={() => setSelectedClientForAppointment(null)}
+                                  style={{ background: 'none', color: 'var(--color-terracotta)', fontSize: '0.85rem', textDecoration: 'underline' }}
+                                >
+                                  Trocar cliente
+                                </button>
+                             </div>
+
+                             <AppointmentFlow 
+                               selectedUser={selectedClientForAppointment}
+                               isAdminFlow={true}
+                               onSuccess={() => {
+                                 // After success, we refresh appointments and close the form
+                                 setTimeout(() => {
+                                   setIsCreatingAppointment(false);
+                                   setSelectedClientForAppointment(null);
+                                   fetchAppointments();
+                                 }, 2000);
+                               }}
+                               onBack={() => setSelectedClientForAppointment(null)}
+                             />
+                          </div>
+                        )}
+                       </div>
+                    </div>
+                  )}
 
                   {isBlockingSlot && (
                     <div className="service-admin-card editing" style={{ marginBottom: '20px' }}>
@@ -1044,6 +1173,14 @@ const renderStyles = () => (
       .admin-container { padding: 0 15px; }
       .tab-btn { font-size: 0.9rem; padding: 15px; }
       .admin-header { flex-direction: column; text-align: center; gap: 15px; }
+    }
+
+    .user-select-item:hover {
+      background-color: var(--color-sand);
+    }
+
+    .appointment-flow-container {
+      margin-top: 10px;
     }
   `}</style>
 );
