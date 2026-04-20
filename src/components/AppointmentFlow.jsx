@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Calendar as CalendarIcon, Clock, ArrowLeft, Loader2 } from 'lucide-react';
 import { useServices } from '../hooks/useServices';
@@ -9,12 +9,77 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
+  const [tempDate, setTempDate] = useState(''); // Local state for input to allow debouncing
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [appointmentNotes, setAppointmentNotes] = useState('');
+  const [dateError, setDateError] = useState('');
+  
+  const containerRef = useRef(null);
+  const actionsRef = useRef(null);
 
   const { services, isLoading: loadingServices } = useServices();
   const { slots, isLoading: loadingSlots } = useAvailableSlots(selectedDate, selectedService?.id);
   const { submitAppointment, isLoading: submitting } = useAppointment();
+
+  // Scroll to top when step changes
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [step]);
+
+  // Scroll to action button when service is selected
+  useEffect(() => {
+    if (selectedService && step === 1 && actionsRef.current) {
+      setTimeout(() => {
+        actionsRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 500);
+    }
+  }, [selectedService, step]);
+
+  // Check if date is valid
+  useEffect(() => {
+    if (tempDate.length === 0) {
+      setSelectedDate('');
+      setSelectedSlot(null);
+      setDateError('');
+      return;
+    }
+
+    const localToday = new Date();
+    // Get YYYY-MM-DD in local time
+    const todayStr = localToday.getFullYear() + '-' + 
+                     String(localToday.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(localToday.getDate()).padStart(2, '0');
+
+    const year = parseInt(tempDate.split('-')[0], 10);
+    const currentYear = localToday.getFullYear();
+    const isFullFormat = tempDate.length === 10;
+
+    if (isFullFormat) {
+      const isValidYear = year >= currentYear && year < currentYear + 10;
+      const isPast = tempDate < todayStr;
+
+      if (!isValidYear) {
+        setDateError('Por favor, insira um ano válido.');
+        setSelectedDate('');
+      } else if (isPast) {
+        setDateError('Não é possível agendar em datas passadas.');
+        setSelectedDate('');
+      } else {
+        setDateError('');
+        if (tempDate !== selectedDate) {
+          setSelectedDate(tempDate);
+          setSelectedSlot(null);
+        }
+      }
+    } else {
+      // Still typing or incomplete
+      setSelectedDate('');
+      setSelectedSlot(null);
+      setDateError('');
+    }
+  }, [tempDate]);
 
   const handleNext = () => setStep((s) => s + 1);
   const handleBack = () => {
@@ -53,7 +118,7 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="appointment-flow">
+    <div className="appointment-flow" ref={containerRef}>
       <div className="progress-container">
         {[1, 2, 3].map((i) => (
           <React.Fragment key={i}>
@@ -108,7 +173,7 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
               </div>
             )}
             
-            <div className="actions">
+            <div className="actions" ref={actionsRef}>
               <button
                 className="btn btn-primary"
                 disabled={!selectedService}
@@ -147,16 +212,18 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
                 type="date"
                 min={today}
                 className="date-input"
-                value={selectedDate}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value);
-                  setSelectedSlot(null);
-                }}
+                value={tempDate}
+                onChange={(e) => setTempDate(e.target.value)}
               />
+              {dateError && (
+                <p style={{ color: 'var(--color-terracotta)', fontSize: '0.85rem', marginTop: '8px', fontWeight: '500' }}>
+                  {dateError}
+                </p>
+              )}
             </div>
 
             {selectedDate && (
-              <div className="slots-container">
+              <div className="slots-container" ref={actionsRef}>
                 <label className="input-label">Horários Disponíveis</label>
                 {loadingSlots ? (
                   <div className="loading-state"><Loader2 className="spinner" size={30} /></div>
@@ -228,7 +295,7 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
               />
             </div>
 
-            <div className="actions" style={{ marginTop: '30px' }}>
+            <div className="actions" style={{ marginTop: '30px' }} ref={actionsRef}>
               <button
                 onClick={handleSubmitAppointment}
                 className="btn btn-gold w-full flex-center"
@@ -270,6 +337,7 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
                     setStep(1);
                     setSelectedService(null);
                     setSelectedDate('');
+                    setTempDate('');
                     setSelectedSlot(null);
                     setAppointmentNotes('');
                 }
