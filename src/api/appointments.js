@@ -13,6 +13,25 @@ export const createAppointment = async (appointmentData) => {
   });
 };
 
+export const deleteAppointment = async (appointmentId) => {
+  return apiClient(`/appointments/${appointmentId}`, {
+    method: 'DELETE'
+  });
+};
+
+export const blockSlot = async (blockData) => {
+  return apiClient('/appointments/block', {
+    method: 'POST',
+    body: JSON.stringify(blockData),
+  });
+};
+
+export const deleteBlock = async (blockId) => {
+  return apiClient(`/appointments/block/${blockId}`, {
+    method: 'DELETE'
+  });
+};
+
 export const getAllAppointments = async () => {
   return apiClient('/appointments', {
     method: 'GET',

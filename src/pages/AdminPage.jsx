@@ -4,7 +4,7 @@ import { Loader2, Lock, Mail, Users, Calendar, Settings, Edit2, Check, X, LogOut
 import toast from 'react-hot-toast';
 import { login, checkIsAdmin } from '../api/auth';
 import { getServices, updateService, createService, deleteService } from '../api/services';
-import { getAllAppointments } from '../api/appointments';
+import { getAllAppointments, deleteAppointment, blockSlot, getAvailableSlots } from '../api/appointments';
 
 const AdminPage = () => {
   const [user, setUser] = useState(() => {
@@ -30,6 +30,12 @@ const AdminPage = () => {
 
   const [appointments, setAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
+  
+  const [isBlockingSlot, setIsBlockingSlot] = useState(false);
+  const [blockForm, setBlockForm] = useState({ date: '', start_time: '09:00', end_time: '18:00', reason: '' });
+  const [savingBlock, setSavingBlock] = useState(false);
+
+
 
   useEffect(() => {
     const verifyToken = async () => {
@@ -180,6 +186,43 @@ const AdminPage = () => {
     }
   };
 
+  const handleDeleteItem = async (app) => {
+    if (app.itemType === 'block') {
+      if (!window.confirm('Tem certeza que deseja remover este bloqueio?')) return;
+      try {
+        await deleteBlock(app.id);
+        toast.success('Bloqueio removido com sucesso!');
+        fetchAppointments();
+      } catch (error) {
+        toast.error('Erro ao remover bloqueio.');
+      }
+    } else {
+      if (!window.confirm('Tem certeza que deseja cancelar e remover este agendamento?')) return;
+      try {
+        await deleteAppointment(app.id);
+        toast.success('Agendamento cancelado com sucesso!');
+        fetchAppointments();
+      } catch (error) {
+        toast.error('Erro ao cancelar agendamento.');
+      }
+    }
+  };
+
+  const handleBlockSlot = async () => {
+    setSavingBlock(true);
+    try {
+      await blockSlot(blockForm);
+      toast.success('Horário bloqueado com sucesso!');
+      setIsBlockingSlot(false);
+      setBlockForm({ date: '', start_time: '09:00', end_time: '18:00', reason: '' });
+      fetchAppointments();
+    } catch (error) {
+      toast.error('Erro ao bloquear horário.');
+    } finally {
+      setSavingBlock(false);
+    }
+  };
+
   if (verifyingAdmin) {
     return (
       <div className="admin-page">
@@ -297,10 +340,69 @@ const AdminPage = () => {
                 >
                   <div className="tab-header">
                     <h2>Todos os Agendamentos</h2>
-                    <button className="btn-icon reload-btn" onClick={fetchAppointments} title="Atualizar">
-                      <Loader2 size={18} className={loadingAppointments ? 'spinner' : ''} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button className="btn btn-primary" onClick={() => setIsBlockingSlot(true)} style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
+                        <Lock size={16} /> Bloquear
+                      </button>
+                      <button className="btn-icon reload-btn" onClick={fetchAppointments} title="Atualizar">
+                        <Loader2 size={18} className={loadingAppointments ? 'spinner' : ''} />
+                      </button>
+                    </div>
                   </div>
+
+                  {isBlockingSlot && (
+                    <div className="service-admin-card editing" style={{ marginBottom: '20px' }}>
+                      <div className="edit-form">
+                        <h3 style={{ marginBottom: '10px' }}>Bloquear Horário</h3>
+                        <div className="edit-row">
+                          <div>
+                            <label>Data</label>
+                            <input 
+                              type="date"
+                              className="edit-input" 
+                              value={blockForm.date} 
+                              onChange={e => setBlockForm({...blockForm, date: e.target.value})} 
+                            />
+                          </div>
+                          <div>
+                            <label>H. Início</label>
+                            <input 
+                              type="time"
+                              className="edit-input"
+                              value={blockForm.start_time}
+                              onChange={e => setBlockForm({...blockForm, start_time: e.target.value})}
+                            />
+                          </div>
+                          <div>
+                            <label>H. Fim</label>
+                            <input 
+                              type="time"
+                              className="edit-input"
+                              value={blockForm.end_time}
+                              onChange={e => setBlockForm({...blockForm, end_time: e.target.value})}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '10px' }}>
+                          <label>Motivo do Bloqueio (Opcional)</label>
+                          <input 
+                            className="edit-input" 
+                            placeholder="Ex: Almoço, Folga, Médico..."
+                            value={blockForm.reason} 
+                            onChange={e => setBlockForm({...blockForm, reason: e.target.value})} 
+                          />
+                        </div>
+                        <div className="edit-actions" style={{ marginTop: '20px' }}>
+                          <button disabled={savingBlock} onClick={() => setIsBlockingSlot(false)} className="btn-cancel">
+                            <X size={16}/> Cancelar
+                          </button>
+                          <button disabled={savingBlock || !blockForm.date || !blockForm.start_time || !blockForm.end_time} onClick={handleBlockSlot} className="btn-save">
+                            {savingBlock ? <Loader2 size={16} className="spinner"/> : <Lock size={16}/>} Salvar Bloqueio
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   {loadingAppointments ? (
                     <div className="loading-state"><Loader2 className="spinner" size={40} /></div>
@@ -314,20 +416,36 @@ const AdminPage = () => {
                       {appointments.map(app => (
                         <div key={app.id} className="appointment-card">
                           <div className="app-main-info">
-                            <span className="app-date">{new Date(app.date).toLocaleDateString('pt-BR')} às {app.time}</span>
-                            <span className={`status-badge ${app.status?.toLowerCase() || 'pending'}`}>
-                              {app.status === 'confirmed' ? 'Confirmado' : app.status === 'cancelled' ? 'Cancelado' : 'Pendente'}
+                            <span className="app-date">
+                              {new Date(app.date).toLocaleDateString('pt-BR')} 
+                              {app.itemType === 'block' ? ` de ${app.time} às ${app.end_time}` : ` às ${app.time}`}
                             </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span className={`status-badge ${app.status?.toLowerCase() || 'pending'}`}>
+                                {app.status === 'confirmed' ? 'Confirmado' : app.status === 'blocked' ? 'Bloqueado' : app.status === 'cancelled' ? 'Cancelado' : 'Pendente'}
+                              </span>
+                              <button className="btn-edit btn-red" onClick={() => handleDeleteItem(app)} title="Excluir" style={{ width: '28px', height: '28px' }}>
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
-                          <div className="app-client-info">
-                            <p><strong><Users size={14}/> Cliente:</strong> {app.client_name}</p>
-                            <p><strong><Phone size={14}/> Telefone:</strong> {app.client_phone}</p>
-                          </div>
-                          <div className="app-service-info">
-                            <p><strong>Serviço:</strong> {app.service?.name || 'Serviço não encontrado'}</p>
-                            <p><strong>Preço:</strong> R$ {app.service?.price ? app.service.price.toFixed(2) : 'Serviço não encontrado'}</p>
-                            <p><strong>Duração:</strong> {app.service?.duration_minutes || 'Serviço não encontrado'} minutos</p>
-                          </div>
+                          {app.itemType === 'block' ? (
+                            <div className="app-client-info" style={{ marginTop: '10px' }}>
+                              <p><strong><Lock size={14}/> {app.client_name}</strong></p>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="app-client-info">
+                                <p><strong><Users size={14}/> Cliente:</strong> {app.client_name}</p>
+                                <p><strong><Phone size={14}/> Telefone:</strong> {app.client_phone}</p>
+                              </div>
+                              <div className="app-service-info">
+                                <p><strong>Serviço:</strong> {app.service?.name || 'Serviço não encontrado'}</p>
+                                <p><strong>Preço:</strong> R$ {app.service?.price ? app.service.price.toFixed(2) : 'Serviço não encontrado'}</p>
+                                <p><strong>Duração:</strong> {app.service?.duration_minutes || 'Serviço não encontrado'} minutos</p>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -732,6 +850,7 @@ const renderStyles = () => (
     .status-badge.confirmed { background: #e6f4ea; color: #1e8e3e; }
     .status-badge.pending { background: #fef7e0; color: #f29900; }
     .status-badge.cancelled { background: #fce8e6; color: #d93025; }
+    .status-badge.blocked { background: #e8eaed; color: #3c4043; }
 
     .app-client-info p, .app-service-info p {
       display: flex;
