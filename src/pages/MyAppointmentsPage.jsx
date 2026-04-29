@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, LogOut, Loader2, Calendar, Clock, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -10,17 +10,18 @@ import { formatPrice } from '../helpers/formatPrice';
 const MyAppointmentsPage = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const user = JSON.parse(localStorage.getItem('@naildesigner:user') || 'null');
+  const user = useMemo(() => JSON.parse(localStorage.getItem('@naildesigner:user') || 'null'), []);
+  const userId = user?.id ?? null;
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       navigate('/login', { state: { from: location.pathname } });
       return;
     }
     fetchAppointments();
-  }, [navigate, user, location.pathname]);
+  }, [navigate, userId, location.pathname]);
 
   const fetchAppointments = async () => {
     setLoading(true);
