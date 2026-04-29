@@ -4,6 +4,8 @@ import { ArrowLeft, LogOut, Loader2, Calendar, Clock, Trash2, CheckCircle, Lock 
 import toast from 'react-hot-toast';
 import { getMyAppointments, deleteAppointment } from '../api/appointments';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { formatDuration } from '../helpers/formatDuration';
+import { formatPrice } from '../helpers/formatPrice';
 
 const MyAppointmentsPage = () => {
   const [appointments, setAppointments] = useState([]);
@@ -115,8 +117,10 @@ const MyAppointmentsPage = () => {
                               <Clock size={18} color="var(--color-gold)" />
                               {app.time}
                             </div>
-                            <p style={{ margin: '5px 0' }}><strong>Serviço:</strong> {app.service?.name}</p>
-                            <p style={{ margin: '5px 0', fontSize: '0.9rem', color: 'var(--color-text-light)' }}>{app.service?.duration_minutes} min • R$ {app.service?.price}</p>
+                             <p style={{ margin: '5px 0' }}><strong>Serviços:</strong> {app.services && app.services.length > 0 ? app.services.map(s => s.name).join(' + ') : 'Nenhum serviço'}</p>
+                             <p style={{ margin: '5px 0', fontSize: '0.9rem', color: 'var(--color-text-light)' }}>
+                               {formatDuration(app.services ? app.services.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) : 0)} • {formatPrice(app.services ? app.services.reduce((sum, s) => sum + (s.price || 0), 0) : 0)}
+                             </p>
                             
                             {app.notes && (
                               <div style={{ marginTop: '10px', padding: '8px 12px', background: 'rgba(197, 160, 89, 0.05)', borderRadius: '8px', fontSize: '0.85rem', borderLeft: '3px solid var(--color-gold)' }}>

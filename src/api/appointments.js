@@ -1,7 +1,8 @@
 import { apiClient } from './client';
 
-export const getAvailableSlots = async (date, serviceId) => {
-  return apiClient(`/availability?date=${date}&serviceId=${serviceId}`, {
+export const getAvailableSlots = async (date, serviceIds) => {
+  const ids = Array.isArray(serviceIds) ? serviceIds.join(',') : serviceIds;
+  return apiClient(`/availability?date=${date}&serviceIds=${ids}`, {
     method: 'GET',
   });
 };

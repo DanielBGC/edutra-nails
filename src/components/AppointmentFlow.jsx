@@ -4,10 +4,12 @@ import { CheckCircle, Calendar as CalendarIcon, Clock, ArrowLeft, Loader2 } from
 import { useServices } from '../hooks/useServices';
 import { useAvailableSlots } from '../hooks/useAvailableSlots';
 import { useAppointment } from '../hooks/useAppointment';
+import { formatDuration } from '../helpers/formatDuration';
+import { formatPrice } from '../helpers/formatPrice';
 
 const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false }) => {
   const [step, setStep] = useState(1);
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [tempDate, setTempDate] = useState(''); // Local state for input to allow debouncing
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -18,8 +20,12 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
   const actionsRef = useRef(null);
 
   const { services, isLoading: loadingServices } = useServices();
-  const { slots, isLoading: loadingSlots } = useAvailableSlots(selectedDate, selectedService?.id);
+  const selectedServiceIds = selectedServices.map(s => s.id);
+  const { slots, isLoading: loadingSlots } = useAvailableSlots(selectedDate, selectedServiceIds);
   const { submitAppointment, isLoading: submitting } = useAppointment();
+
+  const totalDuration = selectedServices.reduce((acc, s) => acc + s.duration_minutes, 0);
+  const totalPrice = selectedServices.reduce((acc, s) => acc + s.price, 0);
 
   // Scroll to top when step changes
   useEffect(() => {
@@ -28,14 +34,25 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
     }
   }, [step]);
 
-  // Scroll to action button when service is selected
+  // Scroll to action button when services are selected
   useEffect(() => {
-    if (selectedService && step === 1 && actionsRef.current) {
+    if (selectedServices.length > 0 && step === 1 && actionsRef.current) {
       setTimeout(() => {
         actionsRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
       }, 500);
     }
-  }, [selectedService, step]);
+  }, [selectedServices.length, step]);
+
+  const toggleService = (svc) => {
+    setSelectedServices(prev => {
+      const isSelected = prev.find(s => s.id === svc.id);
+      if (isSelected) {
+        return prev.filter(s => s.id !== svc.id);
+      } else {
+        return [...prev, svc];
+      }
+    });
+  };
 
   // Check if date is valid
   useEffect(() => {
@@ -99,7 +116,7 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
   const handleSubmitAppointment = async (e) => {
     e?.preventDefault?.();
     const payload = {
-      serviceId: selectedService.id,
+      serviceIds: selectedServices.map(s => s.id),
       clientId: selectedUser.id,
       clientName: selectedUser.name,
       clientPhone: selectedUser.phone,
@@ -154,32 +171,45 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
               <div className="loading-state"><Loader2 className="spinner" size={40} /></div>
             ) : (
               <div className="services-grid">
-                {services.map((svc) => (
-                  <div
-                    key={svc.id}
-                    className={`service-card ${selectedService?.id === svc.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedService(svc)}
-                  >
-                    <div className="card-header">
-                      <h3>{svc.name}</h3>
-                      <span className="price">R$ {svc.price}</span>
+                {services.map((svc) => {
+                  const isSelected = selectedServices.find(s => s.id === svc.id);
+                  return (
+                    <div
+                      key={svc.id}
+                      className={`service-card ${isSelected ? 'selected' : ''}`}
+                      onClick={() => toggleService(svc)}
+                    >
+                      <div className="card-header">
+                        <h3>{svc.name}</h3>
+                        <span className="price">{formatPrice(svc.price)}</span>
+                      </div>
+                      <p>{svc.description}</p>
+                      <div className="duration">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Clock size={14} /> 
+                          {svc.duration_minutes} MIN
+                        </div>
+                        {isSelected && <CheckCircle className="selected-icon" size={18} />}
+                      </div>
                     </div>
-                    <p>{svc.description}</p>
-                    <div className="duration">
-                      <Clock size={16} /> {svc.duration_minutes} min
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             
-            <div className="actions" ref={actionsRef}>
+            <div className="actions selection-summary-actions" ref={actionsRef}>
+              {selectedServices.length > 0 && (
+                <div className="selection-summary">
+                  <span>{selectedServices.length} {selectedServices.length === 1 ? 'serviço' : 'serviços'} selecionados</span>
+                  <p><strong>Total: {formatPrice(totalPrice)}</strong> • {formatDuration(totalDuration)}</p>
+                </div>
+              )}
               <button
                 className="btn btn-primary"
-                disabled={!selectedService}
+                disabled={selectedServices.length === 0}
                 onClick={handleNext}
               >
-                Continuar
+                Continuar para Data e Hora
               </button>
             </div>
           </motion.div>
@@ -198,9 +228,13 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
               <button className="btn-icon" onClick={handleBack}><ArrowLeft size={24} /></button>
               <h2 className="section-title">Data e Horário</h2>
             </div>
-            <div className="service-info">
-              <p className="subtitle">Serviço: <strong>{selectedService.name}</strong></p>
-              <p className="subtitle">Duração: <strong>{selectedService.duration_minutes} min</strong></p>
+            <div className="service-info multi-service">
+              <div className="selected-list">
+                {selectedServices.map(s => (
+                  <span key={s.id} className="service-badge">{s.name}</span>
+                ))}
+              </div>
+              <p className="subtitle">Duração Total: <strong>{formatDuration(totalDuration)}</strong></p>
             </div>
 
             <div className="date-picker-container">
@@ -272,8 +306,9 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
             </div>
             
             <div className="summary-box">
-              <p><strong>Serviço:</strong> {selectedService.name} (R$ {selectedService.price})</p>
-              <p><strong>Duração:</strong> {selectedService.duration_minutes} min</p>
+              <p><strong>Serviços:</strong> {selectedServices.map(s => s.name).join(' + ')}</p>
+              <p><strong>Valor Total:</strong> {formatPrice(totalPrice)}</p>
+              <p><strong>Duração Total:</strong> {formatDuration(totalDuration)}</p>
               <p><strong>Data/Hora:</strong> {formatDateBR(selectedDate)} às {selectedSlot}</p>
             </div>
 
@@ -326,7 +361,8 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
               <p><strong>Cliente:</strong> {selectedUser.name}</p>
               <p><strong>Data:</strong> {formatDateBR(selectedDate)}</p>
               <p><strong>Hora:</strong> {selectedSlot}</p>
-              <p><strong>Serviço:</strong> {selectedService?.name}</p>
+              <p><strong>Serviços:</strong> {selectedServices.map(s => s.name).join(' + ')}</p>
+              <p><strong>Total:</strong> {formatPrice(totalPrice)}</p>
             </div>
             <button
               className="btn btn-primary"
@@ -335,7 +371,7 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
                     onBack();
                 } else {
                     setStep(1);
-                    setSelectedService(null);
+                    setSelectedServices([]);
                     setSelectedDate('');
                     setTempDate('');
                     setSelectedSlot(null);

@@ -584,9 +584,9 @@ const AdminPage = () => {
                                         <p><strong><Phone size={14}/> Telefone:</strong> {app.client_phone}</p>
                                       </div>
                                       <div className="app-service-info">
-                                        <p><strong>Serviço:</strong> {app.service?.name || 'Serviço não encontrado'}</p>
-                                        <p><strong>Preço:</strong> R$ {app.service?.price ? app.service.price.toFixed(2) : 'Serviço não encontrado'}</p>
-                                        <p><strong>Duração:</strong> {app.service?.duration_minutes || 'Serviço não encontrado'} minutos</p>
+                                        <p><strong>Serviços:</strong> {app.services && app.services.length > 0 ? app.services.map(s => s.name).join(' + ') : 'Nenhum serviço'}</p>
+                                        <p><strong>Preço Total:</strong> R$ {app.services ? app.services.reduce((sum, s) => sum + (s.price || 0), 0).toFixed(2) : '0.00'}</p>
+                                        <p><strong>Duração Total:</strong> {app.services ? app.services.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) : 0} minutos</p>
                                       </div>
                                       {app.notes && (
                                         <div className="app-notes" style={{ marginTop: '12px', padding: '10px', background: '#f9f9f9', borderRadius: '8px', borderLeft: '4px solid var(--color-gold)' }}>
