@@ -4,7 +4,7 @@ import { Loader2, Lock, Mail, Users, Calendar, Settings, Edit2, Check, X, LogOut
 import toast from 'react-hot-toast';
 import { login, checkIsAdmin, getUsers } from '../api/auth';
 import { getServices, updateService, createService, deleteService } from '../api/services';
-import { getAllAppointments, deleteAppointment, blockSlot, getAvailableSlots } from '../api/appointments';
+import { getAllAppointments, deleteAppointment, blockSlot, deleteBlock } from '../api/appointments';
 import AppointmentFlow from '../components/AppointmentFlow';
 
 const AdminPage = () => {
@@ -53,7 +53,7 @@ const AdminPage = () => {
         } else {
           setIsAdminVerified(false);
         }
-      } catch (error) {
+      } catch {
         setIsAdminVerified(false);
       } finally {
         setVerifyingAdmin(false);
@@ -172,7 +172,7 @@ const AdminPage = () => {
       toast.success('Serviço atualizado com sucesso!');
       setEditingServiceId(null);
       fetchServices();
-    } catch (error) {
+    } catch {
       toast.error('Erro ao atualizar serviço.');
     } finally {
       setSavingService(false);
@@ -187,7 +187,7 @@ const AdminPage = () => {
       setIsCreatingService(false);
       setCreateForm({ name: '', price: 0, duration_minutes: 30, description: '' });
       fetchServices();
-    } catch (error) {
+    } catch {
       toast.error('Erro ao criar serviço.');
     } finally {
       setSavingService(false);
@@ -201,7 +201,7 @@ const AdminPage = () => {
       await deleteService(id);
       toast.success('Serviço removido com sucesso!');
       fetchServices();
-    } catch (error) {
+    } catch {
       toast.error('Erro ao remover serviço.');
     }
   };
@@ -213,7 +213,7 @@ const AdminPage = () => {
         await deleteBlock(app.id);
         toast.success('Bloqueio removido com sucesso!');
         fetchAppointments();
-      } catch (error) {
+      } catch {
         toast.error('Erro ao remover bloqueio.');
       }
     } else {
@@ -222,7 +222,7 @@ const AdminPage = () => {
         await deleteAppointment(app.id);
         toast.success('Agendamento cancelado com sucesso!');
         fetchAppointments();
-      } catch (error) {
+      } catch {
         toast.error('Erro ao cancelar agendamento.');
       }
     }
@@ -236,7 +236,7 @@ const AdminPage = () => {
       setIsBlockingSlot(false);
       setBlockForm({ date: '', start_time: '09:00', end_time: '18:00', reason: '' });
       fetchAppointments();
-    } catch (error) {
+    } catch {
       toast.error('Erro ao bloquear horário.');
     } finally {
       setSavingBlock(false);

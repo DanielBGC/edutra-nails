@@ -1,12 +1,10 @@
 import { motion } from 'framer-motion';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { getWhatsappUrl } from '../helpers/getWhatsappUrl';
 import heroImg from '../assets/hero/profissional-maria-eduarda-dutra-alves.png';
 
 const Hero = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const whatsappUrl = getWhatsappUrl();
 
   const handleNavClick = (e, href) => {
     e.preventDefault();

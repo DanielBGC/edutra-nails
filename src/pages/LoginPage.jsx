@@ -8,7 +8,9 @@ import { login, register } from '../api/auth';
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/agendamento';
+  const from = typeof location.state?.from === 'string'
+    ? location.state.from
+    : location.state?.from?.pathname || '/agendamento';
 
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [authData, setAuthData] = useState({ email: '', password: '', name: '', phone: '' });

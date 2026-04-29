@@ -1,19 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { getWhatsappUrl } from '../helpers/getWhatsappUrl';
+import { Link, useLocation } from 'react-router-dom';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-
-  const whatsappUrl = getWhatsappUrl();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('@naildesigner:user');
-    setUser(savedUser ? JSON.parse(savedUser) : null);
-  }, [pathname]);
+  const user = JSON.parse(localStorage.getItem('@naildesigner:user') || 'null');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,8 +22,6 @@ const Header = () => {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth' });
         }
-      } else {
-        navigate('/' + href);
       }
     }
   };
@@ -58,13 +47,19 @@ const Header = () => {
             {navLinks.map((link) => (
               <li key={link.name}>
                 {link.href.startsWith('#') ? (
-                  <a
-                    href={link.href}
-                    onClick={(e) => handleNavClick(e, link.href)}
-                    rel="noopener noreferrer"
-                  >
-                    {link.name}
-                  </a>
+                  pathname === '/' ? (
+                    <a
+                      href={link.href}
+                      onClick={(e) => handleNavClick(e, link.href)}
+                      rel="noopener noreferrer"
+                    >
+                      {link.name}
+                    </a>
+                  ) : (
+                    <Link to={`/${link.href}`} rel="noopener noreferrer">
+                      {link.name}
+                    </Link>
+                  )
                 ) : (
                   <Link to={link.href} rel="noopener noreferrer">
                     {link.name}

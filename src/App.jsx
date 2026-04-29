@@ -15,15 +15,23 @@ import AdminPage from './pages/AdminPage';
 import MyAppointmentsPage from './pages/MyAppointmentsPage';
 import LoginPage from './pages/LoginPage';
 import { Toaster } from 'react-hot-toast';
-import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useSpring } from 'framer-motion';
 import { getWhatsappUrl } from './helpers/getWhatsappUrl';
 
 // Scroll to top component
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   useEffect(() => {
+    if (hash) {
+      const element = document.querySelector(hash);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
+    }
+
     window.scrollTo(0, 0);
-  }, [pathname]);
+  }, [pathname, hash]);
   return null;
 };
 
@@ -60,17 +68,15 @@ function App() {
         <Header />
 
         <main>
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/blog" element={<BlogListPage />} />
-              <Route path="/blog/:slug" element={<BlogPostPage />} />
-              <Route path="/agendamento" element={<AgendamentoPage />} />
-              <Route path="/meus-agendamentos" element={<MyAppointmentsPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-            </Routes>
-          </AnimatePresence>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/blog" element={<BlogListPage />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
+            <Route path="/agendamento" element={<AgendamentoPage />} />
+            <Route path="/meus-agendamentos" element={<MyAppointmentsPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+          </Routes>
         </main>
 
         <Footer />

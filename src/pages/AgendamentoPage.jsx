@@ -13,9 +13,9 @@ const AgendamentoPage = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login', { state: { from: location } });
+      navigate('/login', { state: { from: location.pathname } });
     }
-  }, [user, navigate, location]);
+  }, [user, navigate, location.pathname]);
 
   const handleLogout = () => {
     setUser(null);

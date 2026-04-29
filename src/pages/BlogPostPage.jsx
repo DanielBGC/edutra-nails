@@ -3,13 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { blogPosts } from '../data/blogData';
 import { ChevronLeft } from 'lucide-react';
-import { getWhatsappUrl } from '../helpers/getWhatsappUrl';
 
 const BlogPostPage = () => {
   const { slug } = useParams();
   const post = blogPosts.find((p) => p.slug === slug);
-
-  const whatsappUrl = getWhatsappUrl();
 
   if (!post) {
     return (

@@ -54,49 +54,46 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
     });
   };
 
-  // Check if date is valid
-  useEffect(() => {
-    if (tempDate.length === 0) {
-      setSelectedDate('');
-      setSelectedSlot(null);
-      setDateError('');
-      return;
+  const validateDateInput = (inputDate) => {
+    if (inputDate.length === 0) {
+      return { nextDate: '', nextError: '' };
     }
 
     const localToday = new Date();
-    // Get YYYY-MM-DD in local time
     const todayStr = localToday.getFullYear() + '-' + 
                      String(localToday.getMonth() + 1).padStart(2, '0') + '-' + 
                      String(localToday.getDate()).padStart(2, '0');
 
-    const year = parseInt(tempDate.split('-')[0], 10);
+    const year = parseInt(inputDate.split('-')[0], 10);
     const currentYear = localToday.getFullYear();
-    const isFullFormat = tempDate.length === 10;
+    const isFullFormat = inputDate.length === 10;
 
     if (isFullFormat) {
       const isValidYear = year >= currentYear && year < currentYear + 10;
-      const isPast = tempDate < todayStr;
+      const isPast = inputDate < todayStr;
 
       if (!isValidYear) {
-        setDateError('Por favor, insira um ano válido.');
-        setSelectedDate('');
-      } else if (isPast) {
-        setDateError('Não é possível agendar em datas passadas.');
-        setSelectedDate('');
-      } else {
-        setDateError('');
-        if (tempDate !== selectedDate) {
-          setSelectedDate(tempDate);
-          setSelectedSlot(null);
-        }
+        return { nextDate: '', nextError: 'Por favor, insira um ano válido.' };
       }
-    } else {
-      // Still typing or incomplete
-      setSelectedDate('');
-      setSelectedSlot(null);
-      setDateError('');
+      if (isPast) {
+        return { nextDate: '', nextError: 'Não é possível agendar em datas passadas.' };
+      }
+      return { nextDate: inputDate, nextError: '' };
     }
-  }, [tempDate]);
+
+    return { nextDate: '', nextError: '' };
+  };
+
+  const handleDateChange = (nextTempDate) => {
+    setTempDate(nextTempDate);
+    const { nextDate, nextError } = validateDateInput(nextTempDate);
+    const didDateChange = nextDate !== selectedDate;
+    setDateError(nextError);
+    setSelectedDate(nextDate);
+    if (!nextDate || didDateChange) {
+      setSelectedSlot(null);
+    }
+  };
 
   const handleNext = () => setStep((s) => s + 1);
   const handleBack = () => {
@@ -247,7 +244,7 @@ const AppointmentFlow = ({ selectedUser, onBack, onSuccess, isAdminFlow = false 
                 min={today}
                 className="date-input"
                 value={tempDate}
-                onChange={(e) => setTempDate(e.target.value)}
+                onChange={(e) => handleDateChange(e.target.value)}
               />
               {dateError && (
                 <p style={{ color: 'var(--color-terracotta)', fontSize: '0.85rem', marginTop: '8px', fontWeight: '500' }}>

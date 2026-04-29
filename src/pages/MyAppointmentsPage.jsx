@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LogOut, Loader2, Calendar, Clock, Trash2, CheckCircle, Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, LogOut, Loader2, Calendar, Clock, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getMyAppointments, deleteAppointment } from '../api/appointments';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -16,18 +16,18 @@ const MyAppointmentsPage = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login', { state: { from: location } });
+      navigate('/login', { state: { from: location.pathname } });
       return;
     }
     fetchAppointments();
-  }, []);
+  }, [navigate, user, location.pathname]);
 
   const fetchAppointments = async () => {
     setLoading(true);
     try {
       const resp = await getMyAppointments();
       setAppointments(resp.data || []);
-    } catch (error) {
+    } catch {
       toast.error('Erro ao carregar seus agendamentos.');
     } finally {
       setLoading(false);
@@ -46,7 +46,7 @@ const MyAppointmentsPage = () => {
       await deleteAppointment(id);
       toast.success('Agendamento cancelado com sucesso.');
       fetchAppointments();
-    } catch (error) {
+    } catch {
       toast.error('Erro ao cancelar agendamento.');
     }
   };
