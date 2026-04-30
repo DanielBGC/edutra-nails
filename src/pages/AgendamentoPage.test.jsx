@@ -73,7 +73,7 @@ describe('AgendamentoPage booking flow', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    global.Date = MockDate;
+    globalThis.Date = MockDate;
 
     getServicesMock.mockResolvedValue([
       {
@@ -89,7 +89,7 @@ describe('AgendamentoPage booking flow', () => {
   });
 
   afterEach(() => {
-    global.Date = RealDate;
+    globalThis.Date = RealDate;
   });
 
   it('covers service selection, date validation, slot loading and booking submit', async () => {
