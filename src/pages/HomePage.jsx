@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import Hero from '../components/Hero';
 import About from '../components/About';
 import Portfolio from '../components/Portfolio';
+import Packages from '../components/Packages';
 import Testimonials from '../components/Testimonials';
 import Blog from '../components/Blog';
 
@@ -25,6 +26,7 @@ const HomePage = () => {
       <Hero />
       <About />
       <Portfolio />
+      <Packages />
       <Testimonials />
       <Blog />
     </>
