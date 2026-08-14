@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 
 import alongamentoImg from '../assets/portfolio/alongamento-unha-uberaba.jpg';
 import banhoDeGelImg from '../assets/portfolio/banho-de-gel-uberaba.jpg';
@@ -20,10 +20,10 @@ const Portfolio = () => {
   return (
     <section id="portfolio" className="portfolio reveal">
       <div className="container">
-        <h2 className="section-title">Trabalhos Recentes</h2>
+        <h2 className="section-title">Serviços</h2>
         <div className="portfolio-grid">
           {items.map((item) => (
-            <motion.div
+            <Motion.div
               key={item.id}
               className="portfolio-item"
               whileHover={{ scale: 1.02 }}
@@ -36,7 +36,7 @@ const Portfolio = () => {
               <div className="portfolio-overlay">
                 <span>{item.category}</span>
               </div>
-            </motion.div>
+            </Motion.div>
           ))}
         </div>
       </div>

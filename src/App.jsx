@@ -10,7 +10,12 @@ import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
 import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
-import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
+import {
+  motion as Motion,
+  useScroll,
+  useSpring,
+  AnimatePresence,
+} from 'framer-motion';
 import { getWhatsappUrl } from './helpers/getWhatsappUrl';
 
 // Scroll to top component
@@ -36,7 +41,7 @@ function App() {
     <Router>
       <ScrollToTop />
       <div className="app">
-        <motion.div
+        <Motion.div
           className="progress-bar"
           style={{
             scaleX,
