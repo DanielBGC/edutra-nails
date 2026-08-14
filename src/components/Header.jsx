@@ -36,7 +36,7 @@ const Header = () => {
     { name: 'Portfólio', href: '#portfolio' },
     { name: 'Pacotes', href: '#packages' },
     { name: 'Depoimentos', href: '#testimonials' },
-    { name: 'Blog', href: '/blog' },
+    // { name: 'Blog', href: '/blog' },
   ];
 
   return (

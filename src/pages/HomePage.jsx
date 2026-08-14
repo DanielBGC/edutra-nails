@@ -4,7 +4,7 @@ import About from '../components/About';
 import Portfolio from '../components/Portfolio';
 import Packages from '../components/Packages';
 import Testimonials from '../components/Testimonials';
-import Blog from '../components/Blog';
+// import Blog from '../components/Blog';
 
 const HomePage = () => {
   useEffect(() => {
@@ -28,7 +28,7 @@ const HomePage = () => {
       <Portfolio />
       <Packages />
       <Testimonials />
-      <Blog />
+      {/* <Blog /> */}
     </>
   );
 };

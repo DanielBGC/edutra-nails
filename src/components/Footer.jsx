@@ -44,7 +44,7 @@ const Footer = () => {
             <li><a href="#portfolio" onClick={(e) => handleNavClick(e, '#portfolio')} rel="noopener noreferrer">Portfólio</a></li>
             <li><a href="#packages" onClick={(e) => handleNavClick(e, '#packages')} rel="noopener noreferrer">Pacotes</a></li>
             <li><a href="#testimonials" onClick={(e) => handleNavClick(e, '#testimonials')} rel="noopener noreferrer">Depoimentos</a></li>
-            <li><Link to="/blog" rel="noopener noreferrer">Blog</Link></li>
+            {/* <li><Link to="/blog" rel="noopener noreferrer">Blog</Link></li> */}
 
           </ul>
         </div>
