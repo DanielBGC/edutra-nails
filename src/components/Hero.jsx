@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import heroImg from '../assets/hero/profissional-maria-eduarda-dutra-alves.png';
 
@@ -21,7 +21,7 @@ const Hero = () => {
   return (
     <section className="hero">
       <div className="container hero-container">
-        <motion.div
+        <Motion.div
           className="hero-content"
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -51,9 +51,9 @@ const Hero = () => {
               Ver Portfólio
             </a>
           </div>
-        </motion.div>
+        </Motion.div>
 
-        <motion.div
+        <Motion.div
           className="hero-image"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -67,7 +67,7 @@ const Hero = () => {
 
             <div className="image-accent"></div>
           </div>
-        </motion.div>
+        </Motion.div>
       </div>
 
       <style jsx="true">{`

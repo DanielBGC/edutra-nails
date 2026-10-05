@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { blogPosts } from '../data/blogData';
 import { ChevronLeft } from 'lucide-react';
 
@@ -27,7 +27,7 @@ const BlogPostPage = () => {
   }
 
   return (
-    <motion.div
+    <Motion.div
       className="post-page"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -161,7 +161,7 @@ const BlogPostPage = () => {
           }
         }
       `}</style>
-    </motion.div>
+    </Motion.div>
   );
 };
 

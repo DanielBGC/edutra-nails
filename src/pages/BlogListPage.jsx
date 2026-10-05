@@ -1,22 +1,20 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { blogPosts } from '../data/blogData';
 
 const BlogListPage = () => {
-  const MotionH1 = motion.h1;
-  const MotionArticle = motion.article;
   return (
     <div className="blog-page">
       <section className="blog-header">
         <div className="container">
-          <MotionH1
+          <Motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="section-title"
           >
             Nosso Blog
-          </MotionH1>
+          </Motion.h1>
           <p className="subtitle">Dicas, tendências e inspirações para o seu autocuidado.</p>
         </div>
       </section>
@@ -25,7 +23,7 @@ const BlogListPage = () => {
         <div className="container">
           <div className="blog-grid">
             {blogPosts.map((post, i) => (
-              <MotionArticle
+              <Motion.article
                 key={post.id} 
                 className="blog-card"
                 initial={{ opacity: 0, y: 30 }}
@@ -42,7 +40,7 @@ const BlogListPage = () => {
                   <Link to={`/blog/${post.slug}`} className="read-more" rel="noopener noreferrer">Ler post completo <span>→</span></Link>
                 </div>
 
-              </MotionArticle>
+              </Motion.article>
             ))}
           </div>
         </div>

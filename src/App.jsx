@@ -15,7 +15,12 @@ import AdminPage from './pages/AdminPage';
 import MyAppointmentsPage from './pages/MyAppointmentsPage';
 import LoginPage from './pages/LoginPage';
 import { Toaster } from 'react-hot-toast';
-import { motion, useScroll, useSpring } from 'framer-motion';
+import {
+  motion as Motion,
+  useScroll,
+  useSpring,
+  AnimatePresence,
+} from 'framer-motion';
 import { getWhatsappUrl } from './helpers/getWhatsappUrl';
 
 // Scroll to top component
@@ -50,7 +55,7 @@ function App() {
       <ScrollToTop />
       <Toaster position="top-center" reverseOrder={false} />
       <div className="app">
-        <motion.div
+        <Motion.div
           className="progress-bar"
           style={{
             scaleX,
@@ -68,15 +73,17 @@ function App() {
         <Header />
 
         <main>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/blog" element={<BlogListPage />} />
-            <Route path="/blog/:slug" element={<BlogPostPage />} />
-            <Route path="/agendamento" element={<AgendamentoPage />} />
-            <Route path="/meus-agendamentos" element={<MyAppointmentsPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-          </Routes>
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/blog" element={<BlogListPage />} />
+              <Route path="/blog/:slug" element={<BlogPostPage />} />
+              <Route path="/agendamento" element={<AgendamentoPage />} />
+              <Route path="/meus-agendamentos" element={<MyAppointmentsPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </Routes>
+          </AnimatePresence>
         </main>
 
         <Footer />
